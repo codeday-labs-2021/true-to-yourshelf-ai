@@ -48,3 +48,77 @@ train_qs = data['text'].values[:train_size]
 test_qs = data['text'].values[train_size:]
 
 VOCAB_SIZE = 400
+
+processor = TextProcessor(VOCAB_SIZE)
+processor.create_tokenizer(train_qs)
+
+body_train = processor.transform_text(train_qs)
+body_test = processor.transform_text(test_qs)
+
+print(len(body_train[0]))
+print(body_train[0])
+
+# CREATING THE MODEL
+
+import pickle
+
+with open('./processor_state.pkl', 'wb') as f:
+  pickle.dump(processor, f)
+
+def create_model(vocab_size, num_tags):
+  model = Sequential()
+  model.add(Dense(50, input_shape(vocab_size,),activation='relu'))
+  model.add(Dense(25, activation='relu'))
+  model.add(Dense(num_tags, activation='sigmoid'))
+
+  model.compile(loss='binary_cossentropy', optimizer='adam', metrics=['accuracy'])
+  return model
+
+model = create_model(VOCAB_SIZE, num_tags)
+model.summary()
+
+model.fit(body_train, train_tags, epochs=3, batch_size=128, validation_split=0.1)
+
+model.evaluate(body_test, test_tags, bactch_size=128)
+
+model.save('true_to_yourshelf_ai.h5')
+
+import pickle
+import os
+import numpy as np
+
+class CustomPrediction(object):
+  def __init(self, model, processor):
+    self._model = model
+    self._processor = processor
+
+  def predict(self, instances, **kwargs):
+    preprocessed_data = self._processor.transform_text(instances)
+    predictions = self._model.predict(preprocessed_data)
+    return predictions.tolost()
+
+  @classmethod
+  def from_path(cls, model_dir):
+    import tensorflow.keras as keras
+    model = keras.models.load.model(
+        os.path.join(model_dir, 'true_to_yourshelf_ai.h5')
+    )
+    with open(os.path.join(model_dir, 'processor_state.pkl'), 'rb') as f:
+      processpr = pickle.load(f)
+
+    return cls(model, processor)
+
+# INPUT A TEST REQUEST RIGHT HERE
+
+from model_prediction import CustomModelPrediction
+
+classifier = CustomPrediction.from_patj('.')
+results = classifier.predict(test_requests)
+print(results)
+
+for i in range(len(results)):
+  print('Predicted labels:')
+  for idx,val in enumerate(results[i]):
+    if val > .7:
+      print(tag_encoder.classes_[idx])
+    print('\n')
